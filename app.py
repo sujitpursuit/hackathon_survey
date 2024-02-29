@@ -10,7 +10,6 @@ from langchain_community.callbacks import StreamlitCallbackHandler
 from langchain_experimental.tools import PythonREPLTool
 #import matplotlib.pyplot as plt
 import os
-import constants
 from langchain_community.utilities import SerpAPIWrapper
 from csv_sfdc import update_survey_to_salesforce_account
 
