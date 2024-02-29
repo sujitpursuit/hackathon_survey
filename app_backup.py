@@ -1,5 +1,4 @@
 
-
 from langchain.agents import OpenAIFunctionsAgent, AgentExecutor, create_openai_tools_agent
 from langchain.agents import  Tool
 from langchain_openai import AzureChatOpenAI
@@ -9,109 +8,29 @@ import streamlit as st
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_community.callbacks import StreamlitCallbackHandler
 from langchain_experimental.tools import PythonREPLTool
-from azure.storage.blob import BlobServiceClient
+#import matplotlib.pyplot as plt
 import os
 from langchain_community.utilities import SerpAPIWrapper
 from csv_sfdc import update_survey_to_salesforce_account
 
 st.set_page_config(
-    page_title="SurveySage",
-    page_icon="💬",
+    page_title="ServiceNow Knowledge Base Chatbot",
+    page_icon="🦜",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-with st.sidebar:
-    # For setting the JM logo
-    st.markdown("""
-    <style>
-    .custom-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .custom-image {
-        width: 90; /* Adjust as needed */
-        height: auto;
-    }
-    </style>
-    <div class="custom-container">
-        <img class="custom-image" src="https://jmfamily.com/wp-content/uploads/jmfamily-1.png">
-    </div>
-    """, unsafe_allow_html=True)
-
-    #title
-    st.markdown("""
-    <style>
-    .custom-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .custom-text {
-        font-size: 50px;
-        text-align: center;       
-        font-weight: bold;
-        margin-left: 0px;
-    }
-
-    .custom-image {
-        width: 90px; /* Adjust as needed */
-        height: 120;
-    }
-    </style>
-    <div class="custom-container">
-        <div class="custom-text">SurveySage</div>
-        <img class="custom-image" src="https://cdn-icons-png.flaticon.com/128/11797/11797186.png">
-    </div>
-    """, unsafe_allow_html=True)
-
-    #subheader
-    st.markdown("<h5 style='text-align: center;'>Survey Analysis using GenAI</h5>", unsafe_allow_html=True)
-    #st.divider()
-    st.markdown("""
-    <body>
-    <font size="7"> 
-    <p>Ask the chatbot to:</p>
-    <ul>
-        <li class="small-font">List down the contact info of the survey participants.</li>
-        <li>Calculate the average response rating for easy of filing a claim.</li>
-        <li>Plot a graph showing the ratings for quality of repair service received.</li>
-        <li>Analyse how positive or negative the customer feedback is.</li>
-        <li>Update the data to SalesForce.</li>
-        <li>Summarize the overall survey.</li>
-    
-    </ul>
-
-    
-    </font> 
-    </body>
-    """,unsafe_allow_html=True)
+"# Customer survey chatbot🔗"
 
 
-from dotenv import load_dotenv
-CONN_STR = os.getenv("BLOB_CONN_STRING")
+#added for azure openai
+# Configure the baseline configuration of the OpenAI library for Azure OpenAI Service.
+#os.environ["OPENAI_API_TYPE"] = "azure"
+#os.environ["OPENAI_API_VERSION"] = "2023-05-15"
+#os.environ["AZURE_OPENAI_ENDPOINT"] = "https://azopenai-123.openai.azure.com/"
+#os.environ["OPENAI_API_KEY"] = constants.key
+#os.environ["SERPAPI_API_KEY"] = constants.SERP_API_KEY
 
-
-load_dotenv()
-
-
-
-# Initialize a BlobServiceClient
-connection_string = CONN_STR
-blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-
-# Access the container
-container_name = "surveydata"
-container_client = blob_service_client.get_container_client(container_name)
-
-# Access the blob
-blob_name = "service_contracts_survey_data.csv"
-blob_client = container_client.get_blob_client(blob_name)
-
-# Download the blob to a local file
-with open("service_contracts_survey_data.csv", "wb") as download_file:
-    download_file.write(blob_client.download_blob().readall())
 
 search = SerpAPIWrapper()
 
@@ -129,7 +48,6 @@ tools.append(update_survey_to_salesforce_account)
 llm = AzureChatOpenAI(
     deployment_name="gpt4-test",
     model_name="gpt-4",
-    temperature=0
 )
 
 #Set up System Prompt template
@@ -204,19 +122,6 @@ agent_executor= AgentExecutor(
 
 )
 
-
-import time
-import re
-
-def stream_data(output):
-    for word in re.split(r'(\s+)', output):
-        yield word + " "
-        time.sleep(0.08)
-
-avatar_image = "https://cdn-icons-png.flaticon.com/128/11797/11797186.png"
-user_image = "https://cdn-icons-png.flaticon.com/512/9187/9187604.png"
-
-
 memory = ConversationBufferMemory(llm=llm,memory_key='history', return_messages=True, output_key='output')
 #matplotlib.use('TkAgg')
 #plt.close('all')
@@ -227,28 +132,27 @@ if "messages" not in st.session_state or st.sidebar.button("Clear message histor
     
 for msg in st.session_state.messages:
     if isinstance(msg, AIMessage):
-        st.chat_message("assistant",avatar=avatar_image).write(msg.content)
+        st.chat_message("assistant").write(msg.content)
     elif isinstance(msg, HumanMessage):
-        st.chat_message("user",avatar=user_image).write(msg.content)
+        st.chat_message("user").write(msg.content)
     memory.chat_memory.add_message(msg)
     
 
 if prompt := st.chat_input(placeholder=starter_message):
-    st.chat_message("user",avatar=user_image).write(prompt)
-    with st.chat_message("assistant",avatar=avatar_image):
-        with st.spinner("Thinking..."):
-            st_callback = StreamlitCallbackHandler(st.container())
-            response = agent_executor(
-                {"input": prompt, "history": st.session_state.messages},
-                #callbacks=[st_callback],
-                include_run_info=True,
-            )
-            st.session_state.messages.append(AIMessage(content=response["output"]))
-            st.write_stream(stream_data(response["output"]))
-            if os.path.exists('graph.png'):
-                st.image("graph.png")
-            memory.save_context({"input": prompt}, response)
-            if os.path.exists('graph.png'):
-                os.remove('graph.png')
-            st.session_state["messages"] = memory.buffer
-            run_id = response["__run"].run_id
+    st.chat_message("user").write(prompt)
+    with st.chat_message("assistant"):
+        st_callback = StreamlitCallbackHandler(st.container())
+        response = agent_executor(
+            {"input": prompt, "history": st.session_state.messages},
+            callbacks=[st_callback],
+            include_run_info=True,
+        )
+        st.session_state.messages.append(AIMessage(content=response["output"]))
+        st.write(response["output"])
+        if os.path.exists('graph.png'):
+            st.image("graph.png")
+        memory.save_context({"input": prompt}, response)
+        if os.path.exists('graph.png'):
+            os.remove('graph.png')
+        st.session_state["messages"] = memory.buffer
+        run_id = response["__run"].run_id
