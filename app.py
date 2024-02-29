@@ -1,4 +1,5 @@
 
+
 from langchain.agents import OpenAIFunctionsAgent, AgentExecutor, create_openai_tools_agent
 from langchain.agents import  Tool
 from langchain_openai import AzureChatOpenAI
@@ -17,55 +18,75 @@ st.set_page_config(
     page_title="SurveySage",
     page_icon="💬",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
-# For setting the JM logo
-st.markdown("""
-<style>
-.custom-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.custom-image {
-    width: 180px; /* Adjust as needed */
-    height: auto;
-}
-</style>
-<div class="custom-container">
-    <img class="custom-image" src="https://jmfamily.com/wp-content/uploads/jmfamily-1.png">
-</div>
-""", unsafe_allow_html=True)
+with st.sidebar:
+    # For setting the JM logo
+    st.markdown("""
+    <style>
+    .custom-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .custom-image {
+        width: 90; /* Adjust as needed */
+        height: auto;
+    }
+    </style>
+    <div class="custom-container">
+        <img class="custom-image" src="https://jmfamily.com/wp-content/uploads/jmfamily-1.png">
+    </div>
+    """, unsafe_allow_html=True)
 
-#title
-st.markdown("""
-<style>
-.custom-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.custom-text {
-    font-size: 50px;
-    text-align: center;       
-    font-weight: bold;
-    margin-left: 0px;
-}
+    #title
+    st.markdown("""
+    <style>
+    .custom-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .custom-text {
+        font-size: 50px;
+        text-align: center;       
+        font-weight: bold;
+        margin-left: 0px;
+    }
 
-.custom-image {
-    width: 90px; /* Adjust as needed */
-    height: 120;
-}
-</style>
-<div class="custom-container">
-    <div class="custom-text">SurveySage</div>
-    <img class="custom-image" src="https://cdn-icons-png.flaticon.com/128/11797/11797186.png">
-</div>
-""", unsafe_allow_html=True)
+    .custom-image {
+        width: 90px; /* Adjust as needed */
+        height: 120;
+    }
+    </style>
+    <div class="custom-container">
+        <div class="custom-text">SurveySage</div>
+        <img class="custom-image" src="https://cdn-icons-png.flaticon.com/128/11797/11797186.png">
+    </div>
+    """, unsafe_allow_html=True)
 
-#subheader
-st.markdown("<h5 style='text-align: center;'>Survey Analysis using GenAI</h5>", unsafe_allow_html=True)
+    #subheader
+    st.markdown("<h5 style='text-align: center;'>Survey Analysis using GenAI</h5>", unsafe_allow_html=True)
+    #st.divider()
+    st.markdown("""
+    <body>
+    <font size="7"> 
+    <p>Ask the chatbot to:</p>
+    <ul>
+        <li class="small-font">List down the contact info of the survey participants.</li>
+        <li>Calculate the average response rating for easy of filing a claim.</li>
+        <li>Plot a graph showing the ratings for quality of repair service received.</li>
+        <li>Analyse how positive or negative the customer feedback is.</li>
+        <li>Update the data to SalesForce.</li>
+        <li>Summarize the overall survey.</li>
+    
+    </ul>
+
+    
+    </font> 
+    </body>
+    """,unsafe_allow_html=True)
 
 
 from dotenv import load_dotenv
@@ -73,6 +94,7 @@ CONN_STR = os.getenv("BLOB_CONN_STRING")
 
 
 load_dotenv()
+
 
 
 # Initialize a BlobServiceClient
@@ -107,6 +129,7 @@ tools.append(update_survey_to_salesforce_account)
 llm = AzureChatOpenAI(
     deployment_name="gpt4-test",
     model_name="gpt-4",
+    temperature=0
 )
 
 #Set up System Prompt template
